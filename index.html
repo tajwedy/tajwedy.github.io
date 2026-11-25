@@ -1795,6 +1795,19 @@ function autoUnify() {
 }
 function addPwClear(u) { var c = ss.get('nh-pwclear'); if (c === 'all') return; c = c || []; if (u === 'all') c = 'all'; else if (c.indexOf(u.toLowerCase()) < 0) c.push(u.toLowerCase()); ss.set('nh-pwclear', c); }
 function flushPwClear() { var c = ss.get('nh-pwclear'); if (!SB || !c || (Array.isArray(c) && !c.length)) return; SB.clearPw(c).then(function () { ss.del('nh-pwclear'); }, function () {}); }
+function loginListText() {
+  var link = /github\.io$/.test(location.hostname) ? location.origin + location.pathname.replace(/index\.html$/, '') : 'https://tajwedy.github.io';
+  var t = 'بيانات الدخول إلى منصة «رياض التجويد» 🌸\nالرابط: ' + link + '\nاختاري «طالبة» ثم اكتبي اسم المستخدم وكلمة المرور.\n';
+  if (state.settings.uni0000) t += 'كلمة المرور لأول دخول: 0000، وبعدها يطلب منكِ الموقع اختيار كلمة مرور جديدة.\n';
+  t += '\n' + state.students.map(function (s, i) { return ar(i + 1) + '. ' + s.name + ' — اسم المستخدم: ' + s.user; }).join('\n');
+  return t;
+}
+function loginListHTML() {
+  if (!state.students.length) return '';
+  return '<section class="panel"><div class="sec-row"><h3 class="sec-title">قائمة الدخول لإرسالها للطالبات</h3><button class="btn primary sm" type="button" data-act="copy-list">نسخ القائمة</button></div>' +
+    '<p class="muted">أسماء الطالبات (' + ar(state.students.length) + ') مع أسماء المستخدمين ورابط الموقع، جاهزة للصقها في الواتساب.</p>' +
+    '<textarea id="login-list" readonly rows="8" dir="rtl" style="width:100%">' + esc(loginListText()) + '</textarea></section>';
+}
 function unifyHTML() {
   if (!state.students.length) return '';
   return '<form id="uni-form" class="panel" novalidate><h3 class="sec-title">كلمة مرور موحّدة لجميع الطالبات</h3>' +
@@ -1825,7 +1838,7 @@ function forcePwModal(s, oldH) {
 }
 function studentsHTML() {
   return '<h2 class="h2">الطالبات <span class="muted">(' + ar(state.students.length) + ')</span></h2>' +
-    importHTML() + unifyHTML() + '<form id="st-form" class="panel st-form" novalidate><h3 class="sec-title">إضافة طالبة</h3><div class="grid3">' +
+    loginListHTML() + importHTML() + unifyHTML() + '<form id="st-form" class="panel st-form" novalidate><h3 class="sec-title">إضافة طالبة</h3><div class="grid3">' +
     '<label class="fld"><span>اسم الطالبة</span><input id="st-name" required></label>' +
     '<label class="fld"><span>اسم المستخدم</span><input id="st-user" dir="auto" required></label>' +
     '<label class="fld"><span>كلمة المرور</span><input id="st-pass" dir="ltr" required></label></div>' +
@@ -2433,6 +2446,9 @@ document.addEventListener('click', function (e) {
     case 'page-dash': ui.page = 'dash'; ui.tab = b.getAttribute('data-t'); render(); window.scrollTo(0, 0); break;
     case 'open-lesson': openLesson(id); break;
     case 'logovid-del': delete state.settings.logoVid; delete state.settings.logoPoster; markDirty(); render(); break;
+    case 'copy-list': (function () { var ta = $('#login-list'), txt = loginListText(), done = function () { toast('نُسخت القائمة، الصقيها في الواتساب'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { if (ta) { ta.focus(); ta.select(); } toast('حدّدتُ القائمة، اضغطي «نسخ»'); });
+      else if (ta) { ta.focus(); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('حدّدتُ القائمة، اضغطي «نسخ»'); } } })(); break;
     case 'sb-out': if (SB) { SB.logout(); toast('سُجّل الخروج من حساب الحفظ على هذا الجهاز'); render(); } break;
     case 'logo-del': delete state.settings.logoImg; markDirty(); render(); break;
     case 'set-sec': ui.setSec = b.getAttribute('data-t'); render(); break;
